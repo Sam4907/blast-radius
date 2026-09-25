@@ -87,3 +87,23 @@ def parse_git_diff(diff_text):
             new_line += 1
 
     return changes
+
+import os
+from backend.analyser.ast_engine import parse_file_ast
+
+def get_all_repo_functions(repo_path: str) -> list[str]:
+    """Scans repository files and extracts all defined functions for UI dropdowns."""
+    from backend.repo_utils import walk_python_files
+    
+    functions = []
+    py_files = walk_python_files(repo_path)
+    
+    for file_path in py_files:
+        module_name = os.path.splitext(os.path.basename(file_path))[0]
+        try:
+            defined_funcs, _ = parse_file_ast(file_path, module_name)
+            functions.extend(defined_funcs)
+        except SyntaxError:
+            continue
+            
+    return sorted(list(set(functions)))

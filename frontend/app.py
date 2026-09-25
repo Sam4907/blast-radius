@@ -7,6 +7,7 @@ from pyvis.network import Network
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from backend.main import analyze_repo_target
+from backend.repo_utils import get_all_repo_functions
 from backend.bob_integration import run_bob_blast_analysis
 
 st.set_page_config(page_title="Code Blast Radius Visualizer | IBM Bob", layout="wide", page_icon="⚡")
@@ -15,22 +16,33 @@ st.title("⚡ Code Blast Radius Visualizer")
 st.caption("AI-Powered AST Dependency Engine integrated with IBM Bob & watsonx")
 
 # Sidebar Controls
-st.sidebar.header("🤖 IBM Bob Controls")
+st.sidebar.header("🤖 Control Panel")
 bob_mode = st.sidebar.toggle("Enable IBM Bob Agent Integration", value=True)
-repo_path = st.sidebar.text_input("Target Repository", value="sample repo/Complex")
-target_func = st.sidebar.text_input("Modified Function", value="stripe_api.process")
-run_btn = st.sidebar.button("Run Analysis", type="primary")
+
+# Select Repository
+repo_options = ["sample repo/Simple", "sample repo/Medium", "sample repo/Complex"]
+selected_repo = st.sidebar.selectbox("Target Repository", repo_options, index=2)
+
+# Dynamically extract functions from selected repo
+available_functions = get_all_repo_functions(selected_repo)
+
+if available_functions:
+    target_func = st.sidebar.selectbox("Select Function Modified", available_functions)
+else:
+    target_func = st.sidebar.text_input("Modified Function", value="stripe_api.process")
+
+run_btn = st.sidebar.button("Run Blast Analysis", type="primary")
 
 if run_btn or "results" in st.session_state:
     if run_btn:
         with st.spinner("Analyzing AST & Computing Blast Radius..."):
-            st.session_state.results = analyze_repo_target(repo_path, target_func)
+            st.session_state.results = analyze_repo_target(selected_repo, target_func)
 
     results = st.session_state.results
     col1, col2 = st.columns([3, 2])
 
     with col1:
-        st.subheader("🌐 AST Dependency Graph")
+        st.subheader("🌐 Dependency Network Graph")
         net = Network(height="480px", width="100%", directed=True, bgcolor="#111111", font_color="white")
         
         target = results["target"]
@@ -60,9 +72,9 @@ if run_btn or "results" in st.session_state:
 
     with col2:
         if bob_mode:
-            st.subheader("🤖 IBM Bob Agent Payload")
-            bob_output = run_bob_blast_analysis(repo_path, target_func)
-            st.info("Formated as an automated guardrail directive for IBM Bob Agent workflows:")
+            st.subheader("🤖 IBM Bob Agent Directive")
+            bob_output = run_bob_blast_analysis(selected_repo, target_func)
+            st.info("Formatted as an automated guardrail directive for IBM Bob Agent workflows:")
             st.markdown(bob_output)
         else:
             st.subheader("📋 Risk Report")
