@@ -1,17 +1,30 @@
+import os
 import unittest
 
-from backend.repo_utils import walk_python_files, parse_git_diff
+# Import repo_utils regardless of whether test is run from root or backend/api/
+try:
+    from backend.repo_utils import walk_python_files, parse_git_diff
+except ImportError:
+    import sys
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+    from backend.repo_utils import walk_python_files, parse_git_diff
 
 
 class TestRepoUtils(unittest.TestCase):
 
     def test_walk_python_files(self):
-        files = walk_python_files("sample repo")
+        # Locate sample repo relative to project root
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        sample_repo_dir = os.path.join(project_root, "sample repo")
 
-        self.assertIn("sample repo/billing.py", files)
-        self.assertIn("sample repo/checkout.py", files)
-        self.assertIn("sample repo/init.py", files)
+        files = walk_python_files(sample_repo_dir)
 
+        # Normalize paths for cross-platform OS compatibility (Windows vs Mac/Linux)
+        normalized_files = [os.path.normpath(f) for f in files]
+
+        self.assertTrue(any("billing.py" in f for f in normalized_files))
+        self.assertTrue(any("checkout.py" in f for f in normalized_files))
+        self.assertTrue(any("__init__.py" in f for f in normalized_files))
     def test_parse_git_diff_added_line(self):
         diff = """--- a/billing.py
 +++ b/billing.py

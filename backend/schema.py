@@ -1,4 +1,10 @@
-from typing import TypedDict, List, Dict, Any
+import json
+from typing import Dict, List, TypedDict
+
+
+class BlastRadiusImpact(TypedDict):
+    direct: List[str]
+    indirect: List[str]
 
 
 class AnalysisResultSchema(TypedDict):
