@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from backend.main import analyze_repo_target
 from backend.repo_utils import get_all_repo_functions
 from backend.bob_integration import run_bob_blast_analysis
+from watsonxservice import generate_risk_report
 
 st.set_page_config(page_title="Code Blast Radius Visualizer | IBM Bob", layout="wide", page_icon="⚡")
 
@@ -46,23 +47,38 @@ if run_btn or "results" in st.session_state:
         net = Network(height="480px", width="100%", directed=True, bgcolor="#111111", font_color="white")
         
         target = results["target"]
-        direct = set(results["blast_radius"]["direct"])
-        indirect = set(results["blast_radius"]["indirect"])
+        
+        # Support both 'direct'/'indirect' and 'direct_impact'/'indirect_impact' keys
+        blast_data = results.get("blast_radius", {})
+        direct_list = blast_data.get("direct") or blast_data.get("direct_impact") or []
+        indirect_list = blast_data.get("indirect") or blast_data.get("indirect_impact") or []
+
+        direct = set(direct_list)
+        indirect = set(indirect_list)
 
         for node in results["nodes"]:
-            if node == target:
+            # Handle node formatted as dict or string
+            node_id = node["id"] if isinstance(node, dict) else node
+            node_label = node.get("label", node_id) if isinstance(node, dict) else node_id
+
+            if node_id == target:
                 color, label_prefix = "#FF4D4D", "🎯 TARGET: "
-            elif node in direct:
+            elif node_id in direct:
                 color, label_prefix = "#FFA500", "⚠️ DIRECT: "
-            elif node in indirect:
+            elif node_id in indirect:
                 color, label_prefix = "#FFD700", "⚡ INDIRECT: "
             else:
                 color, label_prefix = "#4D94FF", "SAFE: "
 
-            net.add_node(node, label=f"{label_prefix}{node}", color=color, shape="dot")
+            net.add_node(node_id, label=f"{label_prefix}{node_label}", color=color, shape="dot")
 
-        for source, callee in results["edges"]:
-            net.add_edge(source, callee, color="#666666", arrows="to")
+        for edge in results["edges"]:
+            # Handle edge formatted as dict or tuple/list
+            if isinstance(edge, dict):
+                src, callee = edge["source"], edge["target"]
+            else:
+                src, callee = edge[0], edge[1]
+            net.add_edge(src, callee, color="#666666", arrows="to")
 
         net.toggle_physics(True)
         net.save_graph("graph.html")
@@ -78,4 +94,10 @@ if run_btn or "results" in st.session_state:
             st.markdown(bob_output)
         else:
             st.subheader("📋 Risk Report")
-            st.markdown(results["ai_report"])
+            # If backend didn't supply ai_report, invoke live watsonx Granite directly
+            report = results.get("ai_report")
+            if not report:
+                with st.spinner("Generating live watsonx Granite risk report..."):
+                    report = generate_risk_report(results)
+                    results["ai_report"] = report
+            st.markdown(report)

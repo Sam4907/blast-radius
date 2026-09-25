@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 try:
-    from ibm_watsonx_ai.foundation_models import Model
+    from ibm_watsonx_ai.foundation_models import ModelInference
     from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
     HAS_WATSONX_SDK = True
 except ImportError:
@@ -21,9 +21,10 @@ def generate_risk_report(blast_radius_json: dict) -> str:
     direct = blast_radius_json.get("blast_radius", {}).get("direct", [])
     indirect = blast_radius_json.get("blast_radius", {}).get("indirect", [])
 
-    api_key = os.getenv("WATSONX_APIKEY")
-    project_id = os.getenv("WATSONX_PROJECT_ID")
-    url = os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com")
+    # Check for either naming convention in .env
+    api_key = os.getenv("WATSONX_APIKEY") or os.getenv("IBM_API_KEY")
+    project_id = os.getenv("WATSONX_PROJECT_ID") or os.getenv("IBM_PROJECT_ID")
+    url = os.getenv("WATSONX_URL") or os.getenv("IBM_URL", "https://us-south.ml.cloud.ibm.com")
 
     # If SDK or credentials are missing, deliver a clean structured mock response
     if not HAS_WATSONX_SDK or not api_key or not project_id:
@@ -75,8 +76,8 @@ Provide a concise, professional risk report in Markdown:
     }
 
     try:
-        model = Model(
-            model_id="ibm/granite-13b-chat-v2",
+        model = ModelInference(
+            model_id="ibm/granite-4-h-small",
             params=parameters,
             credentials=credentials,
             project_id=project_id
