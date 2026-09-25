@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, TypedDict
+from typing import Any, Dict, List, TypedDict  # Added Any here
 
 
 class BlastRadiusImpact(TypedDict):
@@ -11,5 +11,5 @@ class AnalysisResultSchema(TypedDict):
     target: str
     nodes: List[str]
     edges: List[List[str]]
-    blast_radius: Dict[str, Any]
+    blast_radius: BlastRadiusImpact  # Typed strictly to match the dict
     ai_report: str
