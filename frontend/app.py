@@ -19,16 +19,36 @@ st.caption("AI-Powered AST Dependency Engine integrated with IBM Bob & watsonx")
 # Sidebar Controls
 st.sidebar.header("🤖 Control Panel")
 bob_mode = st.sidebar.toggle("Enable IBM Bob Agent Integration", value=True)
+if bob_mode:
+    st.sidebar.caption("🤖 Bob mode — automated guardrail analysis")
+else:
+    st.sidebar.caption("🧠 watsonx mode — AI risk assessment")
 
 # Select Repository
 repo_options = ["sample repo/Simple", "sample repo/Medium", "sample repo/Complex"]
 selected_repo = st.sidebar.selectbox("Target Repository", repo_options, index=2)
+repo_descriptions = {
+    "sample repo/Simple": "🟢 Direct dependency — demonstrates a basic impact.",
+    "sample repo/Medium": "🟠 Multiple dependencies — demonstrates wider impact.",
+    "sample repo/Complex": "🔴 Multi-hop payment flow — demonstrates full blast radius."
+}
+
+st.sidebar.caption(repo_descriptions[selected_repo])
 
 # Dynamically extract functions from selected repo
 available_functions = get_all_repo_functions(selected_repo)
 
 if available_functions:
-    target_func = st.sidebar.selectbox("Select Function Modified", available_functions)
+    default_index = 0
+
+    if selected_repo == "sample repo/Complex" and "stripe_api.process" in available_functions:
+        default_index = available_functions.index("stripe_api.process")
+
+    target_func = st.sidebar.selectbox(
+        "Select Function Modified",
+        available_functions,
+        index=default_index
+    )
 else:
     target_func = st.sidebar.text_input("Modified Function", value="stripe_api.process")
 
@@ -55,6 +75,14 @@ if run_btn or "results" in st.session_state:
 
         direct = set(direct_list)
         indirect = set(indirect_list)
+
+        st.markdown("### 📊 Impact Summary")
+
+        metric1, metric2, metric3 = st.columns(3)
+
+        metric1.metric("Direct Impact", len(direct))
+        metric2.metric("Indirect Impact", len(indirect))
+        metric3.metric("Total Affected", len(direct | indirect))
 
         for node in results["nodes"]:
             # Handle node formatted as dict or string
@@ -100,4 +128,7 @@ if run_btn or "results" in st.session_state:
                 with st.spinner("Generating live watsonx Granite risk report..."):
                     report = generate_risk_report(results)
                     results["ai_report"] = report
+            if "```markdown" in report:
+                report = report.replace("```markdown", "").replace("```", "").strip()
+
             st.markdown(report)
