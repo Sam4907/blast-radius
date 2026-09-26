@@ -62,8 +62,34 @@ def main():
         action="store_true",
         help="Print raw AST payload JSON before the audit report",
     )
+    parser.add_argument(
+        "--apikey",
+        type=str,
+        default=None,
+        help="Optional IBM Cloud API key override",
+    )
+    parser.add_argument(
+        "--project-id",
+        type=str,
+        default=None,
+        help="Optional IBM watsonx Project ID override",
+    )
+    parser.add_argument(
+        "--url",
+        type=str,
+        default=None,
+        help="Optional IBM watsonx URL override",
+    )
 
     args = parser.parse_args()
+
+    # Allow CLI args to populate environment variables if not already present
+    if args.apikey:
+        os.environ["WATSONX_APIKEY"] = args.apikey
+    if args.project_id:
+        os.environ["WATSONX_PROJECT_ID"] = args.project_id
+    if args.url:
+        os.environ["WATSONX_URL"] = args.url
 
     repo_path = args.repo
     target_func = args.func
@@ -85,13 +111,18 @@ def main():
         print(json.dumps(results, indent=2))
         print("-------------------------\n")
 
+    # Diagnostic check for credentials
+    has_api_key = bool(os.getenv("WATSONX_APIKEY") or os.getenv("IBM_API_KEY"))
+    has_proj_id = bool(os.getenv("WATSONX_PROJECT_ID") or os.getenv("IBM_PROJECT_ID"))
+    print(f"🔑 Secret Check -> WATSONX_APIKEY present: {has_api_key} | WATSONX_PROJECT_ID present: {has_proj_id}")
+
     print("🤖 Querying IBM watsonx Granite AI for Risk Assessment...")
     ai_report = generate_risk_report(results)
 
     banner = build_markdown_banner(target_func, results.get("blast_radius", {}))
     full_markdown = f"{banner}\n{ai_report}\n"
 
-    # Print directly to stdout for terminal review or pipe
+    # Print directly to stdout for terminal review
     print("\n" + "=" * 60)
     print(full_markdown)
     print("=" * 60)
