@@ -1,7 +1,7 @@
 name: Blast Radius AI PR Auditor
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
@@ -31,12 +31,14 @@ jobs:
           pip install python-dotenv requests ibm-watsonx-ai pyvis networkx
 
       - name: Run Blast Radius CLI Analysis
-        env:
-          WATSONX_APIKEY: ${{ secrets.WATSONX_APIKEY }}
-          WATSONX_PROJECT_ID: ${{ secrets.WATSONX_PROJECT_ID }}
-          WATSONX_URL: ${{ secrets.WATSONX_URL }}
         run: |
-          python cli.py --repo "sample repo/Complex" --func "stripe_api.process" --output "pr_comment.md"
+          python cli.py \
+            --repo "sample repo/Complex" \
+            --func "stripe_api.process" \
+            --output "pr_comment.md" \
+            --apikey "${{ secrets.WATSONX_APIKEY }}" \
+            --project-id "${{ secrets.WATSONX_PROJECT_ID }}" \
+            --url "${{ secrets.WATSONX_URL }}"
 
       - name: Post Audit Comment to PR
         env:
