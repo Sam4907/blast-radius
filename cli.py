@@ -37,7 +37,15 @@ def build_markdown_banner(target: str, blast_radius: dict) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Blast Radius CLI: Run AST dependency and IBM watsonx Granite risk audits directly from the terminal."
+        description="Blast Radius CLI: Run AST dependency and IBM watsonx Granite risk audits directly from the terminal.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Example:\n"
+            "  python cli.py \\\n"
+            '    --repo "sample repo/Complex" \\\n'
+            "    --func stripe_api.process \\\n"
+            "    --output pr_comment.md"
+        ),
     )
     parser.add_argument(
         "--repo",
