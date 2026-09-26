@@ -57,11 +57,17 @@ Blast Radius Data:
 - Directly Impacted Functions (1-hop): {direct}
 - Indirectly Impacted Functions (2+ hops): {indirect}
 
-Provide a concise, professional risk report in Markdown:
-1. **Risk Assessment**: Level (LOW, MEDIUM, HIGH, CRITICAL) with justification.
-2. **Impact Summary**: Concise breakdown of affected upstream features.
-3. **Recommended Test Suite**: Exact functions or integration flows that MUST be tested before merging.
-4. **Safety Recommendations**: Short advice to avoid breaking changes.
+Return ONLY these four sections in Markdown, in exactly this order. Do not add any other sections, numbering, placeholders, or introductory text.
+
+**Risk Assessment**: Give the risk level (LOW, MEDIUM, HIGH, CRITICAL) and justification.
+
+**Impact Summary**: Concise breakdown of affected upstream features.
+
+**Recommended Test Suite**: Exact functions or integration flows that MUST be tested before merging.
+
+**Safety Recommendations**: Short advice to avoid breaking changes.
+
+Do not output sections named "Change Risks" or "Resolved With This Change".
 """
 
     credentials = {
