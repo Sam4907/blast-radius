@@ -2,7 +2,11 @@ import os
 import json
 import argparse
 import sys
-from backend.repo_utils import walk_python_files, parse_git_diff
+from backend.repo_utils import (
+    walk_python_files,
+    parse_git_diff,
+    get_modified_functions
+)
 from backend.analyser.ast_engine import parse_file_ast, map_line_to_function
 from backend.analyser.graph_builder import build_dependency_graph_from_calls, get_blast_radius
 
@@ -37,11 +41,28 @@ def analyze_repo_target(repo_path, target_function):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Blast Radius Core CLI")
-    parser.add_argument("--repo", default="sample repo/Medium", help="Path to repo directory")
-    parser.add_argument("--target", default="billing.charge_card", help="Function modified")
-    
+    parser.add_argument(
+        "--repo",
+        default="sample repo/Medium",
+        help="Path to repo directory"
+    )
+
     args = parser.parse_args()
-    analysis = analyze_repo_target(args.repo, args.target)
-    
+
+    # Automatically detect modified functions from Git diff
+    modified_functions = get_modified_functions()
+
+    if not modified_functions:
+        print("No modified functions detected.")
+        sys.exit(0)
+
+    print("\n--- MODIFIED FUNCTIONS ---")
+
+    for function in modified_functions:
+        print(function)
+
     print("\n--- BLAST RADIUS JSON OUTPUT ---")
-    print(json.dumps(analysis, indent=2))
+
+    for function in modified_functions:
+        analysis = analyze_repo_target(args.repo, function)
+        print(json.dumps(analysis, indent=2))
