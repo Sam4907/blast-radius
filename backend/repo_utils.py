@@ -43,11 +43,20 @@ def get_git_diff():
 
     return result.stdout
 
-
 def get_functions_from_file(file_path, changed_lines):
     """
     Find Python functions that contain changed lines.
     """
+
+    repo_root = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=True
+    ).stdout.strip()
+
+    file_path = os.path.join(repo_root, file_path)
+
     if not os.path.exists(file_path):
         return []
 
@@ -77,12 +86,12 @@ def get_functions_from_file(file_path, changed_lines):
 
     return functions
 
-
 def parse_git_diff(diff_text):
     """
     Parse a unified Git diff and return changed files
     with their added and removed line numbers.
     """
+
     changes = []
     current_file = None
     old_line = None
@@ -90,9 +99,8 @@ def parse_git_diff(diff_text):
 
     for line in diff_text.splitlines():
 
-        # Detect the new file path
         if line.startswith("+++ b/"):
-            current_file = line[6:]
+            current_file = line[6:].strip()
 
             changes.append({
                 "file": current_file,
@@ -102,48 +110,32 @@ def parse_git_diff(diff_text):
 
             continue
 
-        # Ignore the old-file marker
         if line.startswith("--- a/"):
             continue
 
-        # Read hunk header
         if line.startswith("@@"):
             parts = line.split()
 
             old_range = parts[1][1:]
-            old_line = (
-                int(old_range.split(",")[0])
-                if "," in old_range
-                else int(old_range)
-            )
+            old_line = int(old_range.split(",")[0])
 
             new_range = parts[2][1:]
-            new_line = (
-                int(new_range.split(",")[0])
-                if "," in new_range
-                else int(new_range)
-            )
+            new_line = int(new_range.split(",")[0])
 
             continue
 
         if current_file is None or old_line is None or new_line is None:
             continue
 
-        # Added line
         if line.startswith("+") and not line.startswith("+++"):
-
             changes[-1]["added_lines"].append(new_line)
             new_line += 1
 
-        # Removed line
         elif line.startswith("-") and not line.startswith("---"):
-
             changes[-1]["removed_lines"].append(old_line)
             old_line += 1
 
-        # Unchanged context line
         else:
-
             old_line += 1
             new_line += 1
 
@@ -165,10 +157,13 @@ def parse_git_diff(diff_text):
     return changes
 
 
-def get_modified_functions():
+
+def get_modified_functions(repo_path=None):
     """
-    Get the current branch diff and return modified functions.
+    Get modified functions from the Git diff.
+    If repo_path is given, only files inside that path are considered.
     """
+
     diff_text = get_git_diff()
 
     changes = parse_git_diff(diff_text)
@@ -176,6 +171,15 @@ def get_modified_functions():
     modified_functions = []
 
     for change in changes:
+
+        file_path = change["file"]
+
+        if repo_path:
+            normalized_repo = repo_path.replace("\\", "/").rstrip("/")
+            normalized_file = file_path.replace("\\", "/")
+
+            if not normalized_file.startswith(normalized_repo + "/"):
+                continue
 
         for function in change["functions"]:
 
