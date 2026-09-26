@@ -1,7 +1,11 @@
 name: Blast Radius AI PR Auditor
 
 on:
-  pull_request_target:
+  push:
+    branches:
+      - main
+      - 'test/**'
+  pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
