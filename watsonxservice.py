@@ -1,4 +1,6 @@
+# pyright: reportPossiblyUnboundVariable=false, reportReturnType=false, reportGeneralTypeIssues=false
 import os
+from typing import Any
 from dotenv import load_dotenv
 
 # Load environment variables from .env if present
@@ -9,10 +11,12 @@ try:
     from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
     HAS_WATSONX_SDK = True
 except ImportError:
+    ModelInference = None  # type: ignore
+    GenParams = None  # type: ignore
     HAS_WATSONX_SDK = False
 
 
-def generate_risk_report(blast_radius_json: dict) -> str:
+def generate_risk_report(blast_radius_json: dict[str, Any]) -> str:
     """
     Sends the blast radius JSON payload to IBM watsonx (Granite model)
     and returns a structured Markdown risk report and test recommendation list.
@@ -75,20 +79,21 @@ Do not output sections named "Change Risks" or "Resolved With This Change".
         "apikey": api_key
     }
 
-    parameters = {
-        GenParams.DECODING_METHOD: "greedy",
-        GenParams.MAX_NEW_TOKENS: 450,
-        GenParams.MIN_NEW_TOKENS: 40,
+    parameters: dict[Any, Any] = {
+        GenParams.DECODING_METHOD: "greedy",  # type: ignore
+        GenParams.MAX_NEW_TOKENS: 450,        # type: ignore
+        GenParams.MIN_NEW_TOKENS: 40,         # type: ignore
     }
 
     try:
-        model = ModelInference(
+        model = ModelInference(  # type: ignore
             model_id="ibm/granite-4-h-small",
             params=parameters,
             credentials=credentials,
-            project_id=project_id
+            project_id=project_id,
         )
-        return model.generate_text(prompt=prompt)
+        result = model.generate_text(prompt=prompt)  # type: ignore
+        return str(result)
     except Exception as e:
         return f"### ⚠️ watsonx API Error\nFailed to invoke Granite model: `{str(e)}`"
 
